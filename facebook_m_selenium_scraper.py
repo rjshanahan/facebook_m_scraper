@@ -14,7 +14,6 @@ from selenium.webdriver.common.action_chains import ActionChains
 from bs4 import BeautifulSoup
 import re
 import time
-import facepy
 import csv
 import pprint as pp
 from collections import OrderedDict
