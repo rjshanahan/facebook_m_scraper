@@ -126,6 +126,7 @@ def blogxtract(url):
     
     blog_list = []
         
+    #set to global in case you want to play/inspect the HTML
     global soup    
     
     soup = BeautifulSoup(fb_html(url), "html.parser")
@@ -198,6 +199,6 @@ def writer_csv_3(blog_list):
     
     
 #tip the domino
-blogxtract(url) 
-
+if __name__ == "__main__":
+    blogxtract(url)
     
