@@ -25,9 +25,11 @@ facebookpassword = 'YOUR PASSWORD'
 path_to_chromedriver = '/Users/YOURNAME/chromedriver'            # change path as needed
 browser = webdriver.Chrome(executable_path = path_to_chromedriver)
 
+url = raw_input(['Enter your facebook group or page URL: ']).replace('www', 'm') + '/'
+
 #sample pages to test against
-#url = 'https://m.facebook.com/groups/JETTOSPATCH/'       #dynamic scrolling
-url = 'https://m.facebook.com/Bitsouttheback/'            #collapsible sections
+#url = 'https://www.facebook.com/groups/JETTOSPATCH'        #dynamic scrolling
+#url = 'https://www.facebook.com/Bitsouttheback'            #collapsible sections
 
 
 #function to handle browser login - using Selenium
