@@ -167,7 +167,7 @@ def blogxtract(url):
             "url": link,
             "user": user,
             "date": date,
-            "popular": ' '.join(popular),
+            "popular": ' '.join(popular).replace('LikeCommentShare',''),
             "blog_text": ' '.join(list(OrderedDict.fromkeys(text_list_final))).replace('likes      likes   comments likes      likes likes','')
                     }
         
