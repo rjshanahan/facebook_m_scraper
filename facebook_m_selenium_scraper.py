@@ -123,8 +123,11 @@ def fb_expander(browser):
 #function to handle/parse HTML and extract data - using BeautifulSoup    
 def blogxtract(url):
     
+    #regex patterns
     problemchars = re.compile(r'[\[=\+/&<>;:!\\|*^\'"\?%#$@)(_\,\.\t\r\n0-9-—\]]')
     prochar = '[(=\-\+\:/&<>;|\'"\?%#$@\,\._)]'
+    like = re.compile(r'(?<=Likes )(.*)(?= L)')
+    share = re.compile(r'(?<=Comments )(.*)(?= S)')
     
     blog_list = []
         
@@ -135,7 +138,6 @@ def blogxtract(url):
     
     try:
         
-        #for i in soup.find_all('div', {'class': "groupMallRoot feedRevamp _2v9s"}):
         for i in soup.find_all('article', {"class": "_55wo _5rgr _5gh8 async_like"}):
 
         
@@ -144,6 +146,7 @@ def blogxtract(url):
     
             #metadata builder
             user = (i.find(re.compile('h1|h3')).text[0:50].lower().encode('ascii', 'ignore').strip() if i.find(re.compile('h1|h3')) is not None else "")
+            #the 'link' variable can be a bit flaky - test if i.strong.a is not None as an alternative
             link = ("https://m.facebook.com" + i.strong.a['href'] if i.strong is not None else "")
             date = (time.strftime("%d/%m/%Y") if 'hr' in (i.find('abbr').get_text() if i.find('abbr') is not None else "") else (i.parent.find('abbr').get_text() if i.parent.find('abbr') is not None else ""))         
             popular = (re.findall(r"[^\W\d_]+|\d+", i.find('footer').get_text().replace('LikeShare','')) if i.find('footer') is not None else "")
@@ -168,13 +171,15 @@ def blogxtract(url):
             "user": user,
             "date": date,
             "popular": ' '.join(popular).replace('LikeCommentShare',''),
-            "blog_text": ' '.join(list(OrderedDict.fromkeys(text_list_final))).replace('likes      likes   comments likes      likes likes','')
+            "blog_text": ' '.join(list(OrderedDict.fromkeys(text_list_final))).replace('likes      likes   comments likes      likes likes',''),
+            "like_fave": (int(''.join((like.findall(str(popular_text)))).replace(' ','')) if len(like.findall(str(popular_text))) > 0 else ''),
+            "share_rtwt": (int(''.join((share.findall(str(popular_text)))).replace(' ','')) if len(share.findall(str(popular_text))) > 0 else '')
                     }
         
             blog_list.append(blog_dict)
             
     #error handling  
-    except (AttributeError, TypeError):
+    except (AttributeError, TypeError, ValueError):
         "missing_value"
         
             
@@ -196,8 +201,9 @@ def writer_csv_3(blog_list):
         writer = csv.writer(csvfile, lineterminator='\n', delimiter=',', quotechar='"')
     
         for i in blog_list:
-            newrow = i['header'], i['url'], i['user'], i['date'], i["popular"], i['blog_text']
-            writer.writerow(newrow)                     
+            if len(i['blog_text']) > 0:
+                newrow = i['header'], i['url'], i['user'], i['date'], i['popular'], i['blog_text'], i["like_fave"], i["share_rtwt"]
+                writer.writerow(newrow)                    
     
     
 #tip the domino
