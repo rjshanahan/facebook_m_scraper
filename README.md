@@ -10,7 +10,9 @@ This program will extract the following and output to a CSV file with punctuatio
 - header
 - url
 - user name 
-- popularity metrics (likes/comments/shares)
+- popularity metrics (a string containing likes/comments/shares)
+- like_fave: integer value for number of likes
+- share_rtwt: integer value for number of shares
 
 
 ![facebook.mobile](https://www.facebook.com/images/fb_icon_325x325.png)
