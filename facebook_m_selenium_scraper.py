@@ -126,7 +126,7 @@ def blogxtract(url):
     #regex patterns
     problemchars = re.compile(r'[\[=\+/&<>;:!\\|*^\'"\?%#$@)(_\,\.\t\r\n0-9-—\]]')
     prochar = '[(=\-\+\:/&<>;|\'"\?%#$@\,\._)]'
-    like = re.compile(r'(?<=Likes )(.*)(?= L)')
+    like = re.compile(r'(.*)(?= L)')
     share = re.compile(r'(?<=Comments )(.*)(?= S)')
     
     blog_list = []
@@ -146,10 +146,12 @@ def blogxtract(url):
     
             #metadata builder
             user = (i.find(re.compile('h1|h3')).text[0:50].lower().encode('ascii', 'ignore').strip() if i.find(re.compile('h1|h3')) is not None else "")
-            #the 'link' variable can be a bit flaky - test if i.strong.a is not None as an alternative
-            link = ("https://m.facebook.com" + i.strong.a['href'] if i.strong is not None else "")
+            #the 'link' variable can be a bit flaky - alternative option enabled below - static URL
+            #link = ("https://m.facebook.com" + i.strong.a['href'] if i.strong is not None else "")
+            link = ("https://m.facebook.com/" + url.rsplit('/',2)[1])
             date = (time.strftime("%d/%m/%Y") if 'hr' in (i.find('abbr').get_text() if i.find('abbr') is not None else "") else (i.parent.find('abbr').get_text() if i.parent.find('abbr') is not None else ""))         
             popular = (re.findall(r"[^\W\d_]+|\d+", i.find('footer').get_text().replace('LikeShare','')) if i.find('footer') is not None else "")
+            popular_text = ' '.join(popular).replace('LikeCommentShare','')
 
             
             #blog text builder
@@ -170,7 +172,7 @@ def blogxtract(url):
             "url": link,
             "user": user,
             "date": date,
-            "popular": ' '.join(popular).replace('LikeCommentShare',''),
+            "popular": popular_text,
             "blog_text": ' '.join(list(OrderedDict.fromkeys(text_list_final))).replace('likes      likes   comments likes      likes likes',''),
             "like_fave": (int(''.join((like.findall(str(popular_text)))).replace(' ','')) if len(like.findall(str(popular_text))) > 0 else ''),
             "share_rtwt": (int(''.join((share.findall(str(popular_text)))).replace(' ','')) if len(share.findall(str(popular_text))) > 0 else '')
