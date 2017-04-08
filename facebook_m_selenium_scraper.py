@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #28 September 2015
+#UPDATED April 2017
 #Richard Shanahan
 #this code scrapes fb group pages using the mobile format for fb ie, 'm' rather than 'www'
 #it can handle login, collapsible section pages and dynamic scroll/load pages
@@ -22,14 +23,10 @@ from collections import OrderedDict
 facebookusername = 'YOUR USER NAME'
 facebookpassword = 'YOUR PASSWORD'
 
-path_to_chromedriver = '/Users/YOURNAME/chromedriver'            # change path as needed
+path_to_chromedriver = '/PATH/TO/chromedriver'            # change path as needed
 browser = webdriver.Chrome(executable_path = path_to_chromedriver)
 
-url = raw_input(['Enter your facebook group or page URL: ']).replace('www', 'm') + '/'
-
-#sample pages to test against
-#url = 'https://www.facebook.com/groups/JETTOSPATCH'        #dynamic scrolling
-#url = 'https://www.facebook.com/Bitsouttheback'            #collapsible sections
+url = raw_input(['Enter your facebook group or page URL: ']).replace('www', 'm') + '/'    
 
 
 #function to handle browser login - using Selenium
@@ -37,20 +34,26 @@ def fb_html(u):
     
     browser.get(u)
     
-    try:
-        #fb mobile site login steps
-        browser.find_element_by_xpath('//*[@id="u_0_0"]/div[1]/div/input').send_keys(facebookusername)
-        browser.find_element_by_xpath('//*[@id="u_0_0"]/div[1]/div/input').send_keys(Keys.TAB, facebookpassword)
-        browser.find_element_by_xpath('//*[@id="u_0_0"]/div[1]/div/input').send_keys(Keys.TAB, Keys.TAB, Keys.TAB, Keys.RETURN)
+    try: 
+        #fb mobile site login steps 
+        browser.find_element_by_xpath('//*[@id="m_loginbar_login_button"]').send_keys(Keys.RETURN)
+        browser.find_element_by_xpath('//*[@id="u_0_1"]/div[1]/div/input').send_keys(facebookusername)
+        browser.find_element_by_xpath('//*[@id="u_0_1"]/div[1]/div/input').send_keys(Keys.TAB, facebookpassword)
+        browser.find_element_by_xpath('//*[@id="u_0_1"]/div[1]/div/input').send_keys(Keys.TAB, Keys.TAB, Keys.TAB, Keys.RETURN)
     
     except NoSuchElementException:
-        #additional step for separate 'm' login
-        browser.find_element_by_xpath('//*[@id="mFinchContainer"]/div[1]/div/a[2]').send_keys(Keys.RETURN)
+        #alernative facebook_m login
         
-        #fb mobile site login steps
-        browser.find_element_by_xpath('//*[@id="u_0_0"]/div[1]/div/input').send_keys(facebookusername)
-        browser.find_element_by_xpath('//*[@id="u_0_0"]/div[1]/div/input').send_keys(Keys.TAB, facebookpassword)
-        browser.find_element_by_xpath('//*[@id="u_0_0"]/div[1]/div/input').send_keys(Keys.TAB, Keys.TAB, Keys.TAB, Keys.RETURN)
+        try: 
+            browser.find_element_by_xpath('//*[@id="login_form"]/ul/li[1]/input').send_keys(facebookusername)
+            browser.find_element_by_xpath('//*[@id="login_form"]/ul/li[2]/div/input').send_keys(facebookpassword)
+            browser.find_element_by_xpath('//*[@id="login_form"]/ul/li[3]/input').send_keys(Keys.RETURN)
+           
+        except NoSuchElementException:
+            browser.find_element_by_xpath('//*[@id="u_0_1"]/div[1]/div/input').send_keys(facebookusername)
+            browser.find_element_by_xpath('//*[@id="u_0_2"]').send_keys(facebookpassword)
+            browser.find_element_by_xpath('//*[@id="u_0_6"]').send_keys(Keys.RETURN)
+
 
     #call fb page handling functions - collapsibles + dynamic page scrolling function    
     fb_expander(browser)
@@ -64,7 +67,7 @@ def fb_html(u):
 
 #function to handle dynamic page content loading - using Selenium
 def fb_scroller(browser):
-
+    
     #define initial page height for 'while' loop
     lastHeight = browser.execute_script("return document.body.scrollHeight")
     
@@ -79,7 +82,7 @@ def fb_scroller(browser):
             break
         else:
             lastHeight = newHeight
-
+    
     return browser
 
 
@@ -89,7 +92,7 @@ def fb_expander(browser):
     #define initial page height for 'while' loop
     lastHeight = browser.execute_script("return document.body.scrollHeight")
     
-    time.sleep(2)
+    time.sleep(3)
     
     try:
         #click the '2015' section expander
@@ -100,7 +103,7 @@ def fb_expander(browser):
     
     try:
         while True:
-            time.sleep(2)
+            time.sleep(3)
             #click the 'see more' expander for 2015 entries
             browser.find_element_by_xpath('//*[starts-with(@id, "u_")]/div[1]/div/h1/div/div').click()
         
@@ -112,8 +115,8 @@ def fb_expander(browser):
                 fb_scroller(browser)
             else:
                 lastHeight = newHeight
-        
-    except NoSuchElementException:
+                
+    except:
         fb_scroller(browser)
     
     return browser
@@ -123,49 +126,46 @@ def fb_expander(browser):
 #function to handle/parse HTML and extract data - using BeautifulSoup    
 def blogxtract(url):
     
-    #regex patterns
     problemchars = re.compile(r'[\[=\+/&<>;:!\\|*^\'"\?%#$@)(_\,\.\t\r\n0-9-—\]]')
     prochar = '[(=\-\+\:/&<>;|\'"\?%#$@\,\._)]'
     like = re.compile(r'(.*)(?= L)')
+    comment = re.compile(r'(.*)(?= C)')
     share = re.compile(r'(?<=Comments )(.*)(?= S)')
     
+    global blog_list 
     blog_list = []
         
-    #set to global in case you want to play/inspect the HTML
     global soup    
     
     soup = BeautifulSoup(fb_html(url), "html.parser")
     
     try:
-        
-        for i in soup.find_all('article', {"class": "_55wo _5rgr _5gh8 async_like"}):
+        for i in soup.find_all('div', {"class": "_3w7e"}):
 
-        
             text_list = []
             text_list_final = []
-    
+
             #metadata builder
             user = (i.find(re.compile('h1|h3')).text[0:50].lower().encode('ascii', 'ignore').strip() if i.find(re.compile('h1|h3')) is not None else "")
-            #the 'link' variable can be a bit flaky - alternative option enabled below - static URL
             #link = ("https://m.facebook.com" + i.strong.a['href'] if i.strong is not None else "")
             link = ("https://m.facebook.com/" + url.rsplit('/',2)[1])
             date = (time.strftime("%d/%m/%Y") if 'hr' in (i.find('abbr').get_text() if i.find('abbr') is not None else "") else (i.parent.find('abbr').get_text() if i.parent.find('abbr') is not None else ""))         
-            popular = (re.findall(r"[^\W\d_]+|\d+", i.find('footer').get_text().replace('LikeShare','')) if i.find('footer') is not None else "")
+            popular = (re.findall(r"[^\W\d_]+|\d+", i.find('div', {"class": "_1fnt"}).get_text()))
             popular_text = ' '.join(popular).replace('LikeCommentShare','')
+            react = (re.findall(r"[^\W\d_]+|\d+", i.find('div', {"class": "_1g06"}).get_text()))
 
-            
             #blog text builder
-            for k in i.find_all('span'):
-                text_list.append(k.get_text().lower().replace('\n',' ').replace("'", "").encode('ascii', 'ignore').strip())
-    
-        
+            for k in i.find_all('p'):
+                text_list.append(k.get_text().lower().replace('\n',' ').replace("'", "").encode('ascii', 'ignore').strip() if k is not None else "")
+
+
             #replace bad characters in blog text
             for ch in prochar:
                 for l in text_list:
                     if ch in l:
                         l = problemchars.sub(' ', l).strip()
                         text_list_final.append(l)
-            
+
             #build dictionary
             blog_dict = {
             "header": "facebook_group_" + url.rsplit('/',2)[1],
@@ -174,15 +174,17 @@ def blogxtract(url):
             "date": date,
             "popular": popular_text,
             "blog_text": ' '.join(list(OrderedDict.fromkeys(text_list_final))).replace('likes      likes   comments likes      likes likes',''),
-            "like_fave": (int(''.join((like.findall(str(popular_text)))).replace(' ','')) if len(like.findall(str(popular_text))) > 0 else ''),
-            "share_rtwt": (int(''.join((share.findall(str(popular_text)))).replace(' ','')) if len(share.findall(str(popular_text))) > 0 else '')
+            "comment": (int(''.join((comment.findall(str(popular_text)))).replace(' ','')) if len(comment.findall(str(popular_text))) > 0 else ''),
+            "share": (int(''.join((share.findall(str(popular_text)))).replace(' ','')) if len(share.findall(str(popular_text))) > 0 else ''),
+            "reaction": (int(''.join(react)))
                     }
-        
+
             blog_list.append(blog_dict)
-            
+
+
     #error handling  
     except (AttributeError, TypeError, ValueError):
-        "missing_value"
+        print "missing_value"
         
             
     #call csv writer function and output file
@@ -201,14 +203,17 @@ def writer_csv_3(blog_list):
     with open(file_out, 'w') as csvfile:
 
         writer = csv.writer(csvfile, lineterminator='\n', delimiter=',', quotechar='"')
+        
+        writer.writerow(["header", "url", "user", "date", "popualar", "blog_text", "comment", "share", "reaction"])
     
         for i in blog_list:
             if len(i['blog_text']) > 0:
-                newrow = i['header'], i['url'], i['user'], i['date'], i['popular'], i['blog_text'], i["like_fave"], i["share_rtwt"]
-                writer.writerow(newrow)                    
+                newrow = i['header'], i['url'], i['user'], i['date'], i['popular'], i['blog_text'], i["comment"], i["share"], i["reaction"]
+                writer.writerow(newrow)                     
+            #else:
+            #    pass
     
     
 #tip the domino
 if __name__ == "__main__":
     blogxtract(url)
-    
