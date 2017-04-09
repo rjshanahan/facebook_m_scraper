@@ -132,11 +132,8 @@ def blogxtract(url):
     comment = re.compile(r'(.*)(?= C)')
     share = re.compile(r'(?<=Comments )(.*)(?= S)')
     
-    global blog_list 
     blog_list = []
         
-    global soup    
-    
     soup = BeautifulSoup(fb_html(url), "html.parser")
     
     try:
